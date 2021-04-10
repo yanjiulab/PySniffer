@@ -3,8 +3,8 @@ A simple packet sniffer written by Python (Linux only)
 
 Supported packet type:
 - sniff IP packet
-- sniff IP packet
-- sniff IP packet
+- sniff TCP packet
+- sniff UDP packet
 
 ## Features
 - Sniff all packet by raw socket
