@@ -56,6 +56,18 @@ class PacketSniffer:
                  packet_filter: PacketFilter = None,
                  log_level=logging.DEBUG,
                  pcap_enable=True, pcap_dir='pcap/', pcap_by_session=True, pcap_clear_dir=True):
+        """
+
+        :param limit: maximum packet number
+        :param elapsed_time_max: maximum time elapsed
+        :param packet_filter: packet filter
+        :param log_level: log level, DEBUG by default
+        :param pcap_enable: store data or not
+        :param pcap_dir: directory of pcap files
+        :param pcap_by_session: store data by session or not
+        :param pcap_clear_dir: clear directory of pcap or not
+        """
+
         self.limit = limit  # sniff by packet number
         self.elapsed_time_max = elapsed_time_max  # sniff by time
         self.start_time = datetime.now()
@@ -144,15 +156,16 @@ class PacketSniffer:
                     d_addr = socket.inet_ntoa(iph[9])
 
                     # filter
-                    if self.filter.src_ip and self.filter.src_ip != str(s_addr):
-                        continue
-                    if self.filter.dst_ip and self.filter.dst_ip != str(d_addr):
-                        continue
-                    if self.filter.proto_type:
-                        if self.filter.proto_type == 'tcp' and protocol != 6:
+                    if self.filter:
+                        if self.filter.src_ip and self.filter.src_ip != str(s_addr):
                             continue
-                        elif self.filter.proto_type == 'udp' and protocol != 17:
+                        if self.filter.dst_ip and self.filter.dst_ip != str(d_addr):
                             continue
+                        if self.filter.proto_type:
+                            if self.filter.proto_type == 'tcp' and protocol != 6:
+                                continue
+                            elif self.filter.proto_type == 'udp' and protocol != 17:
+                                continue
 
                     self.curr_packet_tuple.append(str(s_addr))
                     self.curr_packet_tuple.append(str(d_addr))
@@ -180,10 +193,11 @@ class PacketSniffer:
                         tcph_length = doff_reserved >> 4
 
                         # filtering
-                        if self.filter.src_port and self.filter.src_port != str(source_port):
-                            continue
-                        if self.filter.dst_port and self.filter.dst_port != str(dest_port):
-                            continue
+                        if self.filter:
+                            if self.filter.src_port and self.filter.src_port != str(source_port):
+                                continue
+                            if self.filter.dst_port and self.filter.dst_port != str(dest_port):
+                                continue
 
                         self.curr_packet_tuple.append(source_port)
                         self.curr_packet_tuple.append(dest_port)
@@ -253,10 +267,12 @@ class PacketSniffer:
                 # update index
                 self.limit -= 1
         except KeyboardInterrupt:
-            # self.pcap.pcap_file.close()
+            if not self.pcap_by_session:
+                self.pcap.pcap_file.close()
+            self.logger.info('Sniffer Interrupted!')
             sys.exit()
         finally:
-            self.logger.info('Finish sniffing...')
+            self.logger.info('Sniffer finished ...')
             self.logger.info('Statistics: IP Packet : %s, TCP Packet : %s, UDP Packet : %s',
                              self.ip_packet_num, self.tcp_packet_num, self.udp_packet_num)
 
